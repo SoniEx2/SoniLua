@@ -432,7 +432,7 @@ function admin(argstring,chan)
 	
 
 	local pass=math.random()
-	local data=passmd5:sub(1,6)
+	local data=pass:sub(3)
 	local collide=0
 	for k,v in pairs(last) do
 		if v==data then
