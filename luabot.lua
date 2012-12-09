@@ -833,6 +833,26 @@ function isBlacklisted(sName)
 	return false
 end
 
+function hasHomophobicWord(msg)
+	local tHomophobicWordList = {"fag","faggot","homo"}
+	for x,y in pairs(tHomophobicWordList) do
+		if msg:find("[^a-zA-Z]"..y.."[^a-zA-Z]") then
+			return true
+		end
+	end
+	return false
+end
+
+function hasRacistWord(msg)
+	local tRacistWordList = {"nigger","redneck","wide eyes"}
+	for x,y in pairs(tRacistWordList) do
+		if msg:find("[^a-zA-Z]"..y.."[^a-zA-Z]") then
+			return true
+		end
+	end
+	return false
+end
+
 irc.register_callback("channel_msg", function(chan, from, msg)
 	channel = chan._name
 	active_nick = tostring(from)
@@ -1012,6 +1032,17 @@ irc.register_callback("channel_msg", function(chan, from, msg)
 		if(os.time()>(antispam_global.lua+60)) and antispam_line(chan,from,foo) then
 			antispam_global.lua=os.time()
 			irc.say(chan, from..": Lua is not an acronym.")
+		end
+	else
+		local msg = (" "..msg.." "):lower()
+		if hasHomophobicWord(msg) then
+			if isChannelOp(from,chan) then
+				irc.send("KICK",channel,from,"THIS IS A LGBT FRIENDLY BOT, MOTHERFUCKER!")
+			else
+				irc.send("KICK",channel,from,"NO HOMOPHOBIA!")
+			end
+		elseif hasRacistWord(msg) then
+			irc.send("KICK",channel,from,"NO RACISM!")
 		end
 	end
 end)
