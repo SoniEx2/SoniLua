@@ -53,7 +53,11 @@ local antispam = 0
 local showActions = not hideActions
 
 local native_print=print
+local native_strgsub=string.gsub
+local native_strfind=string.find
 _G.native_print=print
+_G.native_strgsub=string.gsub
+_G.native_strfind=string.find
 local do_antispam=0
 
 local antispam_user={}
@@ -85,16 +89,16 @@ if filesystem.enabled then
 		if #sMode>2 then
 			return nil, "Unknown mode"
 		end
-		sPath = string.gsub(sPath,"\\","/")
+		sPath = native_strgsub(sPath,"\\","/")
 		local _sPath = ""
 		while sPath~=_sPath do
 			_sPath = sPath
-			sPath = string.gsub(sPath,"%.%./","")
+			sPath = native_strgsub(sPath,"%.%./","")
 		end
 		sPath=root.."/"..botName.."/filesystem/"..sPath
 		local tFileHandler, sError = io.open(sPath,sMode)
 		if not tFileHandler then
-			a,b = string.find(sError,root.."/"..botName.."/filesystem/")
+			a,b = native_strfind(sError,root.."/"..botName.."/filesystem/")
 			sStart = string.sub(sError,1,a-1)
 			sEnd = string.sub(sError,b)
 			sError = sStart..sEnd
@@ -497,18 +501,6 @@ local secure_loadstring = function(s,...)
 		return nil, "Bytecode loading not allowed"
 	end
 	
-	-- fucks ":rep()" and stuff like that
-	local scode, v = string.gsub(s,":"," ")
-	local f, err = loadstring(scode,...)
-	
-	if not f then
-		if v>0 then
-			return nil, "Nope"
-		else
-			return nil, err
-		end
-	end
-	
 	local untrusted_function, message = loadstring(s,...)
 	if not untrusted_function then
 		return nil, message
@@ -618,6 +610,45 @@ local function createSandbox()
 		return t
 	end
 	
+	t.string.find=function (self, ...)
+		return "Nope"
+	end
+	t.string.rep=function (self, times)
+		local nself=""
+		for x=1,times do
+			nself=nself..self
+			sleep(1)
+		end
+		return nself
+	end
+	t.string.gsub=function (self, ...)
+		return "Nope"
+	end
+	
+	getmetatable("").__index.find=function (self, ...)
+		--native_print(debug.getinfo(2).source)
+		if isSandboxCmd then
+			return "Nope"
+		else
+			return native_strfind(self, ...)
+		end
+	end
+	getmetatable("").__index.gsub=function (self, ...)
+		--native_print(debug.getinfo(2).source)
+		if isSandboxCmd then
+			return "Nope"
+		else
+			return native_strgsub(self, ...)
+		end
+	end
+	getmetatable("").__index.rep=function (self, times)
+		local nself=""
+		for x=1,times do
+			nself=nself..self
+		end
+		return nself
+	end
+	
 	indext.getmetatable = function(t2)
 		if type(t2) ~= "table" then
 			return nil
@@ -643,23 +674,6 @@ local function createSandbox()
 		xpcall(f,call_handler,...)
 	end
 	
-	t.string.find=function (self, ...)
-		return "Nope"
-	end
-	t.string.rep=function (self, times)
-		local nself=""
-		if times>1000 then
-			return "Nope"
-		end
-		for x=1,times do
-			nself=nself..self
-			sleep(1)
-		end
-		return nself
-	end
-	t.string.gsub=function (self, ...)
-		return "Nope"
-	end
 	
 --[[	t.loadstring = function(s)
 		-- TODO sandbox this
@@ -701,7 +715,9 @@ function secure_run(func,name, ...)
 
 	debug.sethook(forceErrorHook, "l")
 	
+	isSandboxCmd = true
 	local ok, err = pcall(func, ...)
+	isSandboxCmd = false
 	
 	debug.sethook()
 
