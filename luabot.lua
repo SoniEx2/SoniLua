@@ -1009,7 +1009,7 @@ irc.register_callback("channel_msg", function(chan, from, msg)
 				reason=string.sub(cmd,sp+1)
 				cmd=string.sub(cmd,1,sp-1)
 			end
-			if cmd ~= "SoniLua" then
+			if cmd ~= botName then
 				if showActions then
 					native_print("KICK \""..cmd.."\" for "..from.." in "..chan)
 				end
