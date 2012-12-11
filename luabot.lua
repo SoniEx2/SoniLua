@@ -35,6 +35,7 @@ irc.register_callback("connect", function()
 		irc.say("NickServ","identify "..nickServ.nick.." "..nickServ.pass)
 	end
 	
+	irc.join(mainChannel)
 	for x,y in pairs(channelList) do
 		irc.join(y)
 	end
@@ -968,8 +969,10 @@ irc.register_callback("channel_msg", function(chan, from, msg)
 		if showActions then
 			native_print("LEAVE \""..chan.."\" for "..from)
 		end
-		irc.say(channel, "Leaving...")
-		irc.part(channel)
+		if channel ~= mainChannel then
+			irc.say(channel, "Leaving...")
+			irc.part(channel)
+		else return end
 	elseif msg:sub(1,cprefixlen+8)==cprefix.."haspaid " then
 		cmd = msg:sub(cprefixlen+9)
 		irc.say(chan,haspaid(cmd))

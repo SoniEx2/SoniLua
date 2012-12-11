@@ -29,5 +29,6 @@ filesystem.enabled=true
 hideActions=false
 -- END Unsafe features
 
+mainChannel = "#Soni" -- Main channel
 -- Case-Sensitive channel list
-channelList = {"#Soni"}
+channelList = {}
