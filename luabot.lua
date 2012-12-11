@@ -326,14 +326,6 @@ local function antispam_line(channel,nick,line)
 
 	local total_final=total_lines+total_weight
 	--print(string.format("Totals for %s: Line %d Distance %f for %f",nick,total_lines,total_weight,total_final))
-	
-
-	if(total_final>3 and (string.lower(tostring(channel))~="#soni" and string.lower(tostring(channel))~="#ccbots")) then
-		if not antispam_global.botchan then antispam_global.botchan=0 end
-		if(antispam_global.botchan+300<os.time()) then
-			antispam_global.botchan=os.time()
-		end
-	end
 
 	if(total_final>max_lines) then
 		if not antispam_global.helpful[nick] then antispam_global.helpful[nick]=0 end
