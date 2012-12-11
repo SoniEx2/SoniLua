@@ -627,7 +627,7 @@ local function createSandbox()
 	
 	getmetatable("").__index.find=function (self, ...)
 		--native_print(debug.getinfo(2).source)
-		if isSandboxCmd then
+		if isSandboxCmd and debug.getinfo(2).source==active_nick then
 			return "Nope"
 		else
 			return native_strfind(self, ...)
@@ -635,7 +635,7 @@ local function createSandbox()
 	end
 	getmetatable("").__index.gsub=function (self, ...)
 		--native_print(debug.getinfo(2).source)
-		if isSandboxCmd then
+		if isSandboxCmd and debug.getinfo(2).source==active_nick then
 			return "Nope"
 		else
 			return native_strgsub(self, ...)
