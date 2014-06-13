@@ -53,7 +53,7 @@ do -- core functions
   --]]
   function corefunc.prepfunc(sandbox,fn)
     -- fn is an upvalue, getfenv can't access it ;)
-    return setfenv(function(...) return fn(...) end, sandbox)
+    return setfenv(function(...) return fn(...) end, sandbox.executionEnvironment)
   end
   --[[
     Setup a "standard" sandbox as close to unsandboxed Lua as possible
