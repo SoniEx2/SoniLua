@@ -40,12 +40,79 @@ end
 M.utils.table.copy = tcopy -- "sandbox.utils.table.copy.deep(someTable, someRecursionIndexThing)"
 -- END table utils
 
---[[
-  Prepare a function to be used in a getfenv-friendly sandbox
---]]
-local function prepfunc(sandbox,fn)
-  -- fn is an upvalue, getfenv can't access it ;)
-  return setfenv(function(...) return fn(...) end, sandbox)
+local pack
+pack = function(...)
+  return {n = select('#',...), ...}
+end
+M.utils.table.pack = pack
+
+local corefunc = {}
+do -- core functions
+  --[[
+    Prepare a function to be used in a getfenv-friendly sandbox
+  --]]
+  function corefunc.prepfunc(sandbox,fn)
+    -- fn is an upvalue, getfenv can't access it ;)
+    return setfenv(function(...) return fn(...) end, sandbox)
+  end
+  --[[
+    Setup a "standard" sandbox as close to unsandboxed Lua as possible
+  --]]
+  function corefunc.standard(self)
+  
+  end
+  --[[
+    Execute code
+  --]]
+  function corefunc.execute(self, code, chunkname)
+    local f, err = loadstring(code, chunkname)
+    if not f then
+      return false, err
+    end
+    setfenv(f, self.executionEnvironment)
+    -- !!! TODO: fix this! interrupts (aka signals) don't work with coroutines! !!!
+    -- !!! (or at least not when your code is `while true do end`) !!!
+    local co = coroutine.create(f)
+    if self.timeout and self.memout then
+      local clock = os.clock() + self.timeout
+      collectgarbage()
+      collectgarbage()
+      local mem = collectgarbage("count")
+      debug.sethook(co, function()
+        if os.clock() > clock then
+          error("[Timed out]", 0)
+        end
+        if collectgarbage("count") - mem > self.memout then
+          error("[Memory limit reached]", 0)
+        end
+      end, "clr")
+    elseif self.timeout then
+      local clock = os.clock() + self.timeout
+      debug.sethook(co, function()
+        if os.clock() > clock then
+          error("[Timed out]", 0)
+        end
+      end, "clr")
+    elseif self.memout then
+      collectgarbage()
+      collectgarbage()
+      local mem = collectgarbage("count")
+      debug.sethook(co, function()
+        if collectgarbage("count") - mem > self.memout then
+          error("[Memory limit reached]", 0)
+        end
+      end, "clr")
+    end
+    local data
+    while coroutine.status(co) ~= "dead" do
+      data = pack(coroutine.resume(co))
+    end
+    if not data[1] then
+        data.n = data.n + 1
+        data[data.n] = debug.traceback(co)
+      end
+    return unpack(data, 1, data.n)
+  end
 end
 
 --[[
@@ -53,12 +120,10 @@ end
 --]]
 local function new()
   local sandbox = {}
-  sandbox.prepfunc = prepfunc
-  --[[
-    Setup a "standard" sandbox as close to unsandboxed Lua as possible
-  --]]
-  sandbox.makeStandardSandbox = function()
-  end
+  sandbox.executionEnvironment = {}
+  sandbox.prepfunc = corefunc.prepfunc
+  sandbox.makeStandardSandbox = corefunc.standard
+  sandbox.execute = corefunc.execute
 end
 
 M.new = new
